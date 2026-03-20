@@ -31,6 +31,19 @@ jobs:
           USERNAME: ${{ secrets.APP_USERNAME }}
           PASSWORD: ${{ secrets.APP_PASSWORD }}
 
+      - name: Get previous report history
+        if: always()
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Copy history from previous report
+        if: always()
+        continue-on-error: true
+        run: cp -r gh-pages/smoke/history/. allure-results/history/
+
       - name: Install Allure CLI
         if: always()
         run: npm install -g allure-commandline
