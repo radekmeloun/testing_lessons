@@ -2,19 +2,19 @@
 
 ## Who the user is
 
-Radek is learning test automation with Python. He has solid conceptual understanding — he answers "why" questions correctly before seeing the code — but is building practical hands-on experience. He thinks in risk-based layers (sanity/smoke/regression) and reasons well about tradeoffs (e.g. fixture scope, mock vs real API). He is not a beginner but is not yet fluent in Python idioms.
+User is learning test automation with Python. They have solid conceptual understanding — they answer "why" questions correctly before seeing the code — but are building practical hands-on experience. They think in risk-based layers (sanity/smoke/regression) and reason well about tradeoffs (e.g. fixture scope, mock vs real API). Not a beginner but not yet fluent in Python idioms.
 
 **Next focus:** Python-specific programming skills using this project as the practice ground.
 
 ---
 
-## How to guide sessions with Radek
+## How to guide sessions
 
-- **Ask a conceptual question before showing code.** He consistently answers well. This confirms understanding rather than just copying patterns.
-- **Keep explanations concise.** He reads code and diffs — no need to narrate every line.
+- **Ask a conceptual question before showing code.** User consistently answers well. This confirms understanding rather than just copying patterns.
+- **Keep explanations concise.** They read code and diffs — no need to narrate every line.
 - **Use the project's own code as examples.** Don't invent hypothetical snippets when the real code is available.
-- **Correct wrong answers precisely.** When he swaps two concepts (e.g. smoke vs regression stage), point to his own earlier definition and correct just that part.
-- **Validate good instincts explicitly.** He makes good judgment calls (e.g. `function` scope for isolation, merging two assertion groups into one test). Confirm these so he internalises them.
+- **Correct wrong answers precisely.** When they swap two concepts (e.g. smoke vs regression stage), point to their own earlier definition and correct just that part.
+- **Validate good instincts explicitly.** They make good judgment calls (e.g. `function` scope for isolation, merging two assertion groups into one test). Confirm these so they internalise them.
 - **Surface tradeoffs, not just answers.** For every pattern, name what it costs (e.g. `function` scope = more API calls; mocking = mock drift risk).
 
 ---
