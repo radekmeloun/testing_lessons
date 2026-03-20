@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pytest playwright pytest-playwright requests pytest-html pytest-mock allure-pytest
+          pip install pytest playwright pytest-playwright requests pytest-html pytest-mock allure-pytest python-dotenv
           playwright install chromium --with-deps
 
       - name: Run regression tests
