@@ -21,7 +21,7 @@ Radek is learning test automation with Python. He has solid conceptual understan
 
 ## Project structure
 
-```
+```text
 testing_lessons/
 ├── CLAUDE.md                  # this file
 ├── TESTING_GUIDE.md           # full tutorial reference (Steps 1–11)
@@ -52,6 +52,7 @@ testing_lessons/
 ## Established conventions
 
 ### Markers (registered in pytest.ini)
+
 - `sanity` — happy path only, runs on every PR (~30s)
 - `smoke` — broader happy path, runs on push to `release` branch
 - `regression` — full suite, nightly at 02:00 UTC
@@ -60,22 +61,27 @@ testing_lessons/
 A test can carry multiple markers. `sanity` tests always also get `smoke` and `regression`.
 
 ### Fixture scope rules
+
 - Default to `function` scope — full isolation per test
 - Use `module` only for read-only shared data (e.g. API response reused across the file)
 - Use `session` only for expensive one-time setup (browser launch)
 - Always use `yield` when teardown is needed — pytest guarantees it runs even on failure
 
 ### CI headless detection
+
 ```python
 HEADLESS = os.getenv("CI", "false").lower() == "true"
 ```
+
 GitHub Actions sets `CI=true` automatically. No workflow change needed — local runs open the browser visually.
 
 ### Allure reports on GitHub Pages
+
 Each workflow stage publishes to a separate subfolder:
-- https://radekmeloun.github.io/testing_lessons/sanity/
-- https://radekmeloun.github.io/testing_lessons/smoke/
-- https://radekmeloun.github.io/testing_lessons/regression/
+
+- <https://radekmeloun.github.io/testing_lessons/sanity/>
+- <https://radekmeloun.github.io/testing_lessons/smoke/>
+- <https://radekmeloun.github.io/testing_lessons/regression/>
 
 Run history is preserved by copying `gh-pages/<stage>/history/` into `allure-results/history/` before generation.
 
@@ -84,7 +90,7 @@ Run history is preserved by copying `gh-pages/<stage>/history/` into `allure-res
 ## Key design decisions made during the tutorial
 
 | Decision | Rationale |
-|---|---|
+| --- | --- |
 | Sync Playwright API (not async) | Simpler with pytest, no asyncio needed |
 | `BasePage` with `get_text()` wrapping | Unified error messages with page URL context |
 | `frozen=True` dataclass for test data | Immutable, safe to share across parametrize |
@@ -98,10 +104,10 @@ Run history is preserved by copying `gh-pages/<stage>/history/` into `allure-res
 
 ## Target site and APIs
 
-- **UI:** https://practicetestautomation.com/practice-test-login/
+- **UI:** <https://practicetestautomation.com/practice-test-login/>
   - Valid credentials: `student` / `Password123`
   - Success page: `.post-title` contains "Logged In Successfully"
-- **Fake REST API:** https://jsonplaceholder.typicode.com
+- **Fake REST API:** <https://jsonplaceholder.typicode.com>
   - Used for API testing practice — GET /posts, POST /posts, GET /users
   - Note: POST returns 201 but doesn't persist data
 
@@ -122,6 +128,27 @@ pytest -m regression -n auto    # regression in parallel
 pytest tests/test_api.py -v     # specific file
 allure serve allure-results     # view report locally
 ```
+
+---
+
+## Git workflow
+
+Always work on a feature branch — never commit directly to `main`.
+
+```bash
+git checkout -b <branch-name>   # create and switch to branch
+# ... make changes, commit ...
+git push -u origin <branch-name>
+# then open a PR on GitHub — sanity workflow will run automatically
+```
+
+Branch naming convention used in this project: `type/short-description`
+
+- `feat/add-payment-tests`
+- `fix/login-timeout`
+- `ci/update-workflows`
+
+**Never** use `git push` to `main` directly. The sanity check runs on PRs — pushing directly to main bypasses it.
 
 ---
 
