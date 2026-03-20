@@ -782,6 +782,134 @@ Allure opens a local web server with a full dashboard including pass/fail trends
 
 ---
 
+## 11. CI with GitHub Actions
+
+### Workflow structure
+
+Workflows live in `.github/workflows/`. Each is a YAML file that defines when to run and what steps to execute.
+
+Three workflows in this project, one per test stage:
+
+| File | Trigger | Marker |
+|---|---|---|
+| `sanity.yml` | pull request to `main` | `sanity` |
+| `smoke.yml` | push to `release` branch | `smoke` |
+| `regression.yml` | nightly at 02:00 UTC + manual | `regression` |
+
+### Sanity workflow (example)
+
+```yaml
+name: Sanity check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: Run sanity tests
+        run: pytest -m sanity --alluredir=allure-results/sanity
+        env:
+          USERNAME: ${{ secrets.APP_USERNAME }}
+          PASSWORD: ${{ secrets.APP_PASSWORD }}
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-results
+          path: allure-results/sanity/
+```
+
+### Key decisions explained
+
+**`if: always()` on upload** — artifacts are uploaded even when tests fail. Without this, a failing run produces no report — exactly when you need it most.
+
+**`secrets.APP_USERNAME` / `APP_PASSWORD`** — credentials never live in code. Set them in GitHub → Settings → Secrets and variables → Actions. The workflow reads them as environment variables matching what `config.py` expects via `os.getenv()`.
+
+**`workflow_dispatch` on regression** — allows manual trigger from the GitHub UI without waiting for the nightly schedule. Useful before a big release.
+
+**`playwright install chromium --with-deps`** — installs system-level browser dependencies on the Ubuntu runner. Required because GitHub Actions environments don't have them by default.
+
+### Headless mode in CI
+
+GitHub Actions has no display server (`$DISPLAY` is not set). Running Playwright with `headless=False` crashes the browser. The fix uses the `CI` environment variable that GitHub Actions sets automatically on every runner:
+
+```python
+# conftest.py
+import os
+
+HEADLESS = os.getenv("CI", "false").lower() == "true"
+
+@pytest.fixture(scope="session")
+def browser():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=HEADLESS)
+        yield browser
+        browser.close()
+```
+
+- **Locally:** `CI` is not set → `headless=False` → browser opens visually
+- **In CI:** `CI=true` → `headless=True` → no display needed
+
+### requirements.txt — single source of truth for dependencies
+
+Generate from your local venv:
+
+```bash
+pip freeze | grep -E "pytest|playwright|requests|dotenv|allure|mock" > requirements.txt
+```
+
+Install locally:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+playwright install chromium
+```
+
+CI installs identically:
+
+```yaml
+pip install -r requirements.txt
+playwright install chromium --with-deps
+```
+
+This guarantees local and CI environments use the same package versions — a mismatch here is a common source of "works on my machine" failures.
+
+### Nightly schedule syntax (cron)
+
+```yaml
+on:
+  schedule:
+    - cron: "0 2 * * *"   # every day at 02:00 UTC
+  workflow_dispatch:        # also allow manual trigger
+```
+
+Cron format: `minute hour day month weekday`
+
+- `"0 2 * * *"` — 02:00 UTC every day
+- `"0 6 * * 1"` — 06:00 UTC every Monday
+- `"*/30 * * * *"` — every 30 minutes
+
+---
+
 ## Quick reference
 
 ### Running tests
