@@ -1,0 +1,35 @@
+name: Sanity check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install pytest playwright pytest-playwright requests pytest-html pytest-mock allure-pytest
+          playwright install chromium --with-deps
+
+      - name: Run sanity tests
+        run: pytest -m sanity --alluredir=allure-results/sanity
+        env:
+          USERNAME: ${{ secrets.APP_USERNAME }}
+          PASSWORD: ${{ secrets.APP_PASSWORD }}
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-results
+          path: allure-results/sanity/

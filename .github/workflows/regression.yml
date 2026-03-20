@@ -1,0 +1,36 @@
+name: Regression suite
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # every day at 02:00 UTC
+  workflow_dispatch:        # also allow manual trigger from GitHub UI
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install pytest playwright pytest-playwright requests pytest-html pytest-mock allure-pytest
+          playwright install chromium --with-deps
+
+      - name: Run regression tests
+        run: pytest -m regression --alluredir=allure-results/regression
+        env:
+          USERNAME: ${{ secrets.APP_USERNAME }}
+          PASSWORD: ${{ secrets.APP_PASSWORD }}
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-results
+          path: allure-results/regression/
