@@ -1,0 +1,90 @@
+# =============================================================================
+# testing_lessons — Quality Baseline
+# =============================================================================
+# Ruff (linting + formatting), Pytest, and Mypy config.
+# Dependencies remain in requirements.txt (used by CI workflows).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Pytest (migrated from pytest.ini)
+# -----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short --strict-markers --html=report.html --self-contained-html"
+python_files = "test_*.py"
+markers = [
+    "sanity: basic happy path — successful login and core flow",
+    "smoke: broader happy path coverage across main features",
+    "regression: full relevant test suite excluding flaky/one-time tests",
+    "flaky: known intermittently failing tests — excluded from CI by default",
+]
+
+# -----------------------------------------------------------------------------
+# Ruff — Linter
+# -----------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    # --- Core ---
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # Pyflakes (undefined names, unused imports, …)
+    "I",    # isort (import ordering)
+    "N",    # pep8-naming (snake_case enforcement)
+    "UP",   # pyupgrade (modernize syntax for target-version)
+
+    # --- Bug prevention ---
+    "B",    # flake8-bugbear (common design flaws)
+    "S",    # flake8-bandit (security: hardcoded passwords, exec, …)
+    "C4",   # flake8-comprehensions (unnecessary list/dict wrapping)
+    "SIM",  # flake8-simplify (collapsible ifs, ternaries, …)
+    "RET",  # flake8-return (superfluous else after return, …)
+    "ARG",  # flake8-unused-arguments
+
+    # --- Pytest style ---
+    "PT",   # flake8-pytest-style (fixtures over setup/teardown, …)
+]
+
+ignore = [
+    "S101",   # assert is fine in tests (per-file-ignores below covers it too)
+    "B008",   # function-call-in-default-argument — triggers on FastAPI Depends()
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests: allow assert, unused fixture args, hardcoded test credentials
+"tests/**" = ["S101", "S105", "S106", "ARG001", "ARG002"]
+"conftest.py" = ["ARG001", "ARG002"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-single-line = false
+known-first-party = ["pages"]
+
+# -----------------------------------------------------------------------------
+# Ruff — Formatter (replaces Black)
+# -----------------------------------------------------------------------------
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# -----------------------------------------------------------------------------
+# Mypy (optional — stricter type checking)
+# -----------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["playwright.*", "pytest_playwright.*"]
+ignore_missing_imports = true

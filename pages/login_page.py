@@ -1,9 +1,10 @@
 from pages.base_page import BasePage
 
+
 class LoginPage(BasePage):
     URL = "https://practicetestautomation.com/practice-test-login/"
 
-    def navigate(self):          # overrides base, uses own URL
+    def navigate(self):  # overrides base, uses own URL
         super().navigate(self.URL)
 
     def login(self, username, password):
