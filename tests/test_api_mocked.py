@@ -1,7 +1,7 @@
-import pytest
 import requests
 
 BASE_URL = "https://jsonplaceholder.typicode.com"
+TIMEOUT = 10
 
 
 def test_create_post_mocked(mocker):
@@ -20,7 +20,7 @@ def test_create_post_mocked(mocker):
 
     # Call the code under test — no network happens
     payload = {"title": "Test Post", "body": "Test body", "userId": 1}
-    response = requests.post(f"{BASE_URL}/posts", json=payload)
+    response = requests.post(f"{BASE_URL}/posts", json=payload, timeout=TIMEOUT)
 
     assert response.status_code == 201
     created = response.json()
@@ -38,7 +38,7 @@ def test_get_posts_mocked(mocker):
 
     mocker.patch("requests.get", return_value=mock_response)
 
-    response = requests.get(f"{BASE_URL}/posts")
+    response = requests.get(f"{BASE_URL}/posts", timeout=TIMEOUT)
 
     assert response.status_code == 200
     posts = response.json()
@@ -50,7 +50,7 @@ def test_create_post_called_with_correct_payload(mocker):
     mock_post = mocker.patch("requests.post", return_value=mocker.Mock(status_code=201))
 
     payload = {"title": "Test Post", "body": "Test body", "userId": 1}
-    requests.post(f"{BASE_URL}/posts", json=payload)
+    requests.post(f"{BASE_URL}/posts", json=payload, timeout=TIMEOUT)
 
     # Verify requests.post was called exactly once with the right arguments
     mock_post.assert_called_once()
@@ -59,13 +59,13 @@ def test_create_post_called_with_correct_payload(mocker):
 
 
 def test_api_failure_handling(mocker):
-    """Test how your code handles a 500 response — impossible to test reliably without mocking."""
+    """Test that a 500 response is handled — only testable reliably with mocking."""
     mock_response = mocker.Mock()
     mock_response.status_code = 500
     mock_response.json.return_value = {"error": "Internal Server Error"}
 
     mocker.patch("requests.post", return_value=mock_response)
 
-    response = requests.post(f"{BASE_URL}/posts", json={})
+    response = requests.post(f"{BASE_URL}/posts", json={}, timeout=TIMEOUT)
 
     assert response.status_code == 500

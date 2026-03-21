@@ -26,7 +26,7 @@ testing_lessons/
 ├── CLAUDE.md                  # this file
 ├── TESTING_GUIDE.md           # full tutorial reference (Steps 1–11)
 ├── conftest.py                # root fixtures: browser (session), page (function)
-├── pytest.ini                 # testpaths, addopts, markers registered here
+├── pyproject.toml             # Ruff, Pytest, Mypy config — single source of truth for tooling
 ├── config.py                  # credentials via os.getenv + dotenv fallback
 ├── requirements.txt           # pinned dependencies — source of truth for local + CI
 ├── pages/                     # Page Object Model
@@ -51,7 +51,7 @@ testing_lessons/
 
 ## Established conventions
 
-### Markers (registered in pytest.ini)
+### Markers (registered in pyproject.toml)
 
 - `sanity` — happy path only, runs on every PR (~30s)
 - `smoke` — broader happy path, runs on push to `release` branch
@@ -97,7 +97,8 @@ Run history is preserved by copying `gh-pages/<stage>/history/` into `allure-res
 | `pytest.param(..., id=)` for named cases | Readable test names in output and reports |
 | `scope="module"` for API fixture | One network call shared across the file |
 | `scope="function"` for user creation fixture | Full isolation — each test owns its data |
-| Separate `requirements.txt` | Single source of truth for local venv and CI |
+| Separate `requirements.txt` | Dependencies for local venv and CI |
+| `pyproject.toml` for tooling | Ruff + Pytest + Mypy config in one place (replaced `pytest.ini`) |
 | `if: always()` on upload/deploy steps | Reports generated even when tests fail |
 
 ---
@@ -164,3 +165,146 @@ Using this project as the base, areas to develop:
 6. **Exception handling** — improve `BasePage.get_text()` with custom exception hierarchy
 7. **Generators** — use `yield`-based data generators for parametrize inputs
 8. **OOP patterns** — extend POM with more page classes, explore composition vs inheritance
+
+---
+
+## Coding style
+
+All rules are enforced via Ruff — see `pyproject.toml` for the active rule-sets. This section explains *intent*.
+
+- **PEP 8** enforced automatically (E, W, N rule-sets).
+- **Type hints** on all function signatures. Use `X | None` instead of `Optional[X]`.
+  - Playwright types: `page: Page`, `browser: Browser`, `context: BrowserContext`.
+- **No bare `try/except`** — always catch a specific exception.
+- **No `type: ignore`** without an inline comment explaining *why*.
+- **Constants** in `UPPER_SNAKE_CASE` at module level.
+- **f-strings** over `format()` or `%` — Ruff's `UP` rules enforce this.
+
+```python
+# ✅ Good — specific exception, clear intent
+try:
+    response = client.get(url, timeout=10)
+    response.raise_for_status()
+except requests.HTTPError as exc:
+    logger.error("Request failed: %s", exc)
+    raise
+
+# ❌ Bad — swallows everything, hides bugs
+try:
+    response = client.get(url)
+except Exception:
+    pass
+```
+
+### Imports
+
+Ruff `I` (isort) handles ordering automatically:
+
+1. Standard library
+2. Third-party (`playwright`, `pytest`, `requests`, …)
+3. Local (`pages/` Page Objects, helpers)
+
+Never use wildcard imports (`from module import *`).
+
+---
+
+## Playwright-specific rules
+
+### Locators — always prefer semantic selectors
+
+```python
+# ✅ Good — resilient, readable
+page.get_by_role("button", name="Submit")
+page.get_by_label("Email address")
+page.get_by_text("Welcome back")
+
+# ❌ Bad — brittle, tied to DOM structure
+page.locator("#btn-submit")
+page.locator("div.form > button:nth-child(2)")
+```
+
+Priority: `get_by_role` > `get_by_label` > `get_by_text` > `get_by_test_id` > CSS/XPath.
+
+### Assertions — always use `expect()`
+
+```python
+from playwright.sync_api import expect
+
+# ✅ Good — auto-retrying, clear error messages
+expect(page.get_by_text("Dashboard")).to_be_visible()
+expect(page.get_by_role("alert")).to_have_text("Saved")
+expect(page).to_have_url("/dashboard")
+
+# ❌ Bad — no retry, race conditions
+assert page.is_visible("text=Dashboard")
+assert "dashboard" in page.url
+```
+
+### Waits — never use arbitrary timeouts
+
+```python
+# ✅ Good — event-based, deterministic
+page.wait_for_url("**/dashboard")
+expect(page.get_by_text("Loaded")).to_be_visible(timeout=10_000)
+
+# ❌ Bad — arbitrary sleep, flaky
+page.wait_for_timeout(3000)
+import time; time.sleep(2)
+```
+
+---
+
+## Testing rules (Pytest)
+
+- **Fixtures over setup/teardown** — Ruff `PT` enforces this.
+- **`pytest.raises`** for expected exceptions — never wrap assertions in `try/except`.
+- **Descriptive test names**: `test_<what>_<condition>_<expected>`.
+- **Factory fixtures** for reusable test data — return a callable, not a static value.
+- **Teardown via `yield`** — clean up resources after the yield in fixtures.
+- **No `try/except` in tests** — let exceptions propagate; pytest reports them clearly.
+
+```python
+# ✅ Good — clear, uses fixtures, descriptive name
+def test_login_with_invalid_password_shows_error(login_page):
+    login_page.login("student", "wrong")
+    assert "Your password is invalid!" in login_page.get_error_message()
+
+# ❌ Bad — try/except in test, vague name
+def test_login(login_page):
+    try:
+        login_page.login("student", "wrong")
+        assert login_page.get_error_message()
+    except Exception:
+        pytest.fail("Login failed")
+```
+
+---
+
+## Workflow — quality checks
+
+Before committing code, run all three steps in order:
+
+```bash
+# 1. Auto-format
+ruff format .
+
+# 2. Lint + auto-fix
+ruff check --fix .
+
+# 3. Run tests
+pytest
+```
+
+Quick check during development: `ruff check . && pytest -m sanity`
+
+---
+
+## What NOT to do
+
+- Do not add `setup.cfg`, `.flake8`, `.isort.cfg`, or `black.toml` — Ruff replaces all of them.
+- Do not use `unittest.TestCase` — use plain pytest functions and fixtures.
+- Do not use `page.wait_for_timeout()` or `time.sleep()` — use `expect()` or event-based waits.
+- Do not use CSS/XPath selectors when a semantic locator exists.
+- Do not put locator strings directly in tests — use Page Objects.
+- Do not silence linter warnings without a comment explaining the reason.
+- Do not commit code that fails `ruff check` or `pytest`.

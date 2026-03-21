@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.mark.sanity
 @pytest.mark.smoke
 @pytest.mark.regression
