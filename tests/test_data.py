@@ -26,3 +26,8 @@ INVALID_LOGINS = [
         id="invalid_username",
     ),
 ]
+
+VALID_LOGINS = [
+    {"username": "student", "password": "Password123", "description": "valid_login"}
+    # Add more valid login cases as needed
+]

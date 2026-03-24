@@ -1,7 +1,7 @@
 import pytest
 
 import config
-from tests.test_data import INVALID_LOGINS
+from tests.test_data import INVALID_LOGINS, VALID_LOGINS
 
 
 @pytest.mark.skip(reason="not implemented yet")
@@ -15,6 +15,11 @@ def test_invalid_login(login_page, login_data):
     login_page.login(login_data.username, login_data.password)
     assert login_data.error in login_page.get_error_message()
 
+@pytest.mark.regression
+@pytest.mark.parametrize("login_data", VALID_LOGINS)
+def test_valid_login_cases(login_page, login_data):
+    login_page.login(login_data["username"], login_data["password"])
+    assert login_page.is_logged_in()
 
 @pytest.mark.xfail
 @pytest.mark.parametrize(
