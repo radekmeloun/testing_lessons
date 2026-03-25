@@ -28,21 +28,31 @@ INVALID_LOGINS = [
 ]
 
 VALID_LOGINS = [
+    # Session 1: plain dicts alongside the dataclass — flexible, no enforced structure.
+    # Call site: login_data["username"] vs login_data.username for dataclass.
     {"username": "student", "password": "Password123", "description": "valid_login"}
-    # Add more valid login cases as needed
 ]
 
+# Session 2: list comprehensions — extract a single field from each pytest.param.
+# p.values[0] unwraps the LoginCase stored inside pytest.param(...).
 INVALID_USERNAMES = [p.values[0].username for p in INVALID_LOGINS]
 
 INVALID_ERRORS = [p.values[0].error for p in INVALID_LOGINS]
 
+# Set comprehension — {expr for item in iterable} — deduplicates automatically.
+# Use {} instead of [] to get a set directly, no need to wrap in set().
 UNIQUE_ERRORS = {p.values[0].error for p in INVALID_LOGINS}
 
+# Module-level assert — runs at import time (during pytest collection).
+# Structural guard: if INVALID_LOGINS grows but extraction breaks, fails fast.
 assert len(INVALID_USERNAMES) == len(INVALID_LOGINS)
 
+
+# Session 7: generator function — `yield` makes this lazy.
+# Unlike a list, no values are stored in memory upfront.
+# Each value is produced only when the caller asks for the next one.
+# Can only be iterated once — fine here, parametrize consumes it at collection time.
 def generate_post_ids(start: int, end: int):
-    # yields each integer from start to end inclusive
-    # skip any ID divisible by 10 (simulate "reserved" IDs)
     for post_id in range(start, end + 1):
         if post_id % 10 != 0:
-            yield post_id
+            yield post_id  # pauses here, returns post_id, resumes on next iteration
