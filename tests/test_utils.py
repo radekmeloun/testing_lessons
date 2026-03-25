@@ -1,4 +1,8 @@
+import pytest
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
 import tests.utils as utils
+from pages.base_page import BasePage, ElementNotFoundError, PageError
 
 
 def test_flaky_function_succeeds_on_third_attempt():
@@ -17,3 +21,14 @@ def test_flaky_function_succeeds_on_third_attempt():
     result = flaky()
     assert result == "success"
     assert len(attempts) == 3  # confirms it took exactly 3 calls
+
+def test_get_text_raises_element_not_found_on_timeout(mocker):
+    page = mocker.Mock()
+    page.locator.return_value.text_content.side_effect = PlaywrightTimeoutError(
+        "Simulated timeout")
+    base = BasePage(page)
+    with pytest.raises(ElementNotFoundError, match="not found"):
+        base.get_text("#missing")
+
+def test_element_not_found_error_is_subclass_of_page_error():
+    assert issubclass(ElementNotFoundError, PageError)
