@@ -31,3 +31,12 @@ VALID_LOGINS = [
     {"username": "student", "password": "Password123", "description": "valid_login"}
     # Add more valid login cases as needed
 ]
+
+INVALID_USERNAMES = [p.values[0].username for p in INVALID_LOGINS]
+
+INVALID_ERRORS = [p.values[0].error for p in INVALID_LOGINS]
+
+UNIQUE_ERRORS = {p.values[0].error for p in INVALID_LOGINS}
+
+assert len(INVALID_USERNAMES) == len(INVALID_LOGINS)
+
