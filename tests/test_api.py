@@ -1,5 +1,9 @@
+from typing import Any, Literal
+
 import pytest
 import requests
+
+import tests.utils as utils
 
 BASE_URL = "https://jsonplaceholder.typicode.com"
 TIMEOUT = 10
@@ -19,13 +23,13 @@ def test_get_posts_returns_200():
 
 
 @pytest.mark.regression
-def test_get_posts_returns_list(post):
+def test_get_posts_returns_list(post: Any):
     assert isinstance(post, list)
     assert len(post) == 100
 
 
 @pytest.mark.regression
-def test_post_has_correct_fields(post):
+def test_post_has_correct_fields(post: Any):
     first = post[0]
     assert "id" in first
     assert "title" in first
@@ -42,7 +46,9 @@ def test_post_has_correct_fields(post):
 @pytest.mark.regression
 def test_create_post():
     payload = {"title": "Test Post", "body": "Test body", "userId": 1}
-    response = requests.post(f"{BASE_URL}/posts", json=payload, timeout=TIMEOUT)
+    with utils.timed_block(f"POST /posts title={payload['title']}"):
+        response = requests.post(f"{BASE_URL}/posts", json=payload, timeout=TIMEOUT)
+
     assert response.status_code == 201
     created = response.json()
     assert created["title"] == payload["title"]
@@ -53,21 +59,21 @@ def test_create_post():
 @pytest.mark.smoke
 @pytest.mark.regression
 @pytest.mark.parametrize("post_id", [1])
-def test_valid_post_returns_200_smoke(post_id):
+def test_valid_post_returns_200_smoke(post_id: int):
     response = requests.get(f"{BASE_URL}/posts/{post_id}", timeout=TIMEOUT)
     assert response.status_code == 200
 
 
 @pytest.mark.regression
 @pytest.mark.parametrize("post_id", [2, 3, 50, 100])
-def test_valid_post_returns_200(post_id):
+def test_valid_post_returns_200(post_id: int):
     response = requests.get(f"{BASE_URL}/posts/{post_id}", timeout=TIMEOUT)
     assert response.status_code == 200
 
 
 @pytest.mark.regression
 @pytest.mark.parametrize("post_id", [0, -1, 99999])
-def test_invalid_post_returns_404(post_id):
+def test_invalid_post_returns_404(post_id: Literal[0] | Literal[-1] | Literal[99999]):
     response = requests.get(f"{BASE_URL}/posts/{post_id}", timeout=TIMEOUT)
     assert response.status_code == 404
 
