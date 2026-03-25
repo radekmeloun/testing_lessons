@@ -40,3 +40,9 @@ UNIQUE_ERRORS = {p.values[0].error for p in INVALID_LOGINS}
 
 assert len(INVALID_USERNAMES) == len(INVALID_LOGINS)
 
+def generate_post_ids(start: int, end: int):
+    # yields each integer from start to end inclusive
+    # skip any ID divisible by 10 (simulate "reserved" IDs)
+    for post_id in range(start, end + 1):
+        if post_id % 10 != 0:
+            yield post_id

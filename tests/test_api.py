@@ -1,9 +1,9 @@
-from typing import Any, Literal
 
 import pytest
 import requests
 
 import tests.utils as utils
+from tests.test_data import generate_post_ids
 
 BASE_URL = "https://jsonplaceholder.typicode.com"
 TIMEOUT = 10
@@ -23,13 +23,13 @@ def test_get_posts_returns_200():
 
 
 @pytest.mark.regression
-def test_get_posts_returns_list(post: Any):
+def test_get_posts_returns_list(post: list):
     assert isinstance(post, list)
     assert len(post) == 100
 
 
 @pytest.mark.regression
-def test_post_has_correct_fields(post: Any):
+def test_post_has_correct_fields(post: list):
     first = post[0]
     assert "id" in first
     assert "title" in first
@@ -73,7 +73,7 @@ def test_valid_post_returns_200(post_id: int):
 
 @pytest.mark.regression
 @pytest.mark.parametrize("post_id", [0, -1, 99999])
-def test_invalid_post_returns_404(post_id: Literal[0] | Literal[-1] | Literal[99999]):
+def test_invalid_post_returns_404(post_id: int):
     response = requests.get(f"{BASE_URL}/posts/{post_id}", timeout=TIMEOUT)
     assert response.status_code == 404
 
@@ -100,3 +100,8 @@ def test_create_post_with_different_payloads(title, body, user_id):
 def test_nonexistent_post_returns_404():
     response = requests.get(f"{BASE_URL}/posts/99999", timeout=TIMEOUT)
     assert response.status_code == 404
+
+
+@pytest.mark.parametrize("post_id", generate_post_ids(1, 20))
+def test_generated_post_ids_are_valid(post_id: int):
+    assert post_id % 10 != 0, f"Post ID {post_id} should be skipped (reserved)"
