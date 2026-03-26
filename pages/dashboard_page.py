@@ -1,8 +1,16 @@
+from playwright.sync_api import Page
+
 from pages.base_page import BasePage
+from pages.header import HeaderComponent
 
 
 class DashboardPage(BasePage):
     URL = "https://practicetestautomation.com/logged-in-successfully/"
+
+
+    def __init__(self, page: Page) -> None:
+        super().__init__(page)
+        self.header = HeaderComponent(page)  # composition alongside inheritance
 
     def navigate(self, _url: str = "") -> None:  # overrides base, uses own URL
         super().navigate(self.URL)
