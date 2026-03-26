@@ -4,6 +4,7 @@ from pages.base_page import BasePage
 from pages.header import HeaderComponent
 
 
+
 class DashboardPage(BasePage):
     URL = "https://practicetestautomation.com/logged-in-successfully/"
 
