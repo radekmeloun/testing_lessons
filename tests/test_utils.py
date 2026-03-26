@@ -6,10 +6,9 @@ from pages.base_page import BasePage, ElementNotFoundError, PageError
 
 
 def test_flaky_function_succeeds_on_third_attempt():
-    attempts = []
-    # attempts lives in the enclosing scope (this test function), NOT inside flaky().
-    # Each retry call sees the same list — it persists across attempts.
+    # Closure: attempts is defined in the enclosing scope so it persists across retries.
     # If it were inside flaky(), it would reset to [] on every call.
+    attempts = []
 
     @utils.retry(times=3)
     def flaky():

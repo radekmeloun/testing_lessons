@@ -4,7 +4,8 @@ from pages.base_page import BasePage
 
 
 class HeaderComponent:
-    """Reusable component for the site header — not a full page."""
+    """Reusable UI component — not a page, so it doesn't inherit BasePage.
+    Uses composition: holds a BasePage instance to access shared helpers."""
     def __init__(self, page: Page) -> None:
         self.base = BasePage(page)
 

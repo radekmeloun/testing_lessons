@@ -46,6 +46,8 @@ def test_post_has_correct_fields(post: list):
 @pytest.mark.regression
 def test_create_post():
     payload = {"title": "Test Post", "body": "Test body", "userId": 1}
+    # Context manager — `with` guarantees __exit__ runs even if the block raises.
+    # timed_block uses @contextmanager + yield, so setup/teardown live in one function.
     with utils.timed_block(f"POST /posts title={payload['title']}"):
         response = requests.post(f"{BASE_URL}/posts", json=payload, timeout=TIMEOUT)
 
@@ -102,6 +104,8 @@ def test_nonexistent_post_returns_404():
     assert response.status_code == 404
 
 
+# parametrize exhausts the generator at collection time — the lazy sequence becomes
+# a fixed list of test cases before any test runs.
 @pytest.mark.parametrize("post_id", generate_post_ids(1, 20))
 def test_generated_post_ids_are_valid(post_id: int):
     assert post_id % 10 != 0, f"Post ID {post_id} should be skipped (reserved)"
