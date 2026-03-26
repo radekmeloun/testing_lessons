@@ -1,5 +1,9 @@
+
 import pytest
 import requests
+
+import tests.utils as utils
+from tests.test_data import generate_post_ids
 
 BASE_URL = "https://jsonplaceholder.typicode.com"
 TIMEOUT = 10
@@ -19,13 +23,13 @@ def test_get_posts_returns_200():
 
 
 @pytest.mark.regression
-def test_get_posts_returns_list(post):
+def test_get_posts_returns_list(post: list):
     assert isinstance(post, list)
     assert len(post) == 100
 
 
 @pytest.mark.regression
-def test_post_has_correct_fields(post):
+def test_post_has_correct_fields(post: list):
     first = post[0]
     assert "id" in first
     assert "title" in first
@@ -42,7 +46,11 @@ def test_post_has_correct_fields(post):
 @pytest.mark.regression
 def test_create_post():
     payload = {"title": "Test Post", "body": "Test body", "userId": 1}
-    response = requests.post(f"{BASE_URL}/posts", json=payload, timeout=TIMEOUT)
+    # Context manager — `with` guarantees __exit__ runs even if the block raises.
+    # timed_block uses @contextmanager + yield, so setup/teardown live in one function.
+    with utils.timed_block(f"POST /posts title={payload['title']}"):
+        response = requests.post(f"{BASE_URL}/posts", json=payload, timeout=TIMEOUT)
+
     assert response.status_code == 201
     created = response.json()
     assert created["title"] == payload["title"]
@@ -53,21 +61,21 @@ def test_create_post():
 @pytest.mark.smoke
 @pytest.mark.regression
 @pytest.mark.parametrize("post_id", [1])
-def test_valid_post_returns_200_smoke(post_id):
+def test_valid_post_returns_200_smoke(post_id: int):
     response = requests.get(f"{BASE_URL}/posts/{post_id}", timeout=TIMEOUT)
     assert response.status_code == 200
 
 
 @pytest.mark.regression
 @pytest.mark.parametrize("post_id", [2, 3, 50, 100])
-def test_valid_post_returns_200(post_id):
+def test_valid_post_returns_200(post_id: int):
     response = requests.get(f"{BASE_URL}/posts/{post_id}", timeout=TIMEOUT)
     assert response.status_code == 200
 
 
 @pytest.mark.regression
 @pytest.mark.parametrize("post_id", [0, -1, 99999])
-def test_invalid_post_returns_404(post_id):
+def test_invalid_post_returns_404(post_id: int):
     response = requests.get(f"{BASE_URL}/posts/{post_id}", timeout=TIMEOUT)
     assert response.status_code == 404
 
@@ -94,3 +102,10 @@ def test_create_post_with_different_payloads(title, body, user_id):
 def test_nonexistent_post_returns_404():
     response = requests.get(f"{BASE_URL}/posts/99999", timeout=TIMEOUT)
     assert response.status_code == 404
+
+
+# parametrize exhausts the generator at collection time — the lazy sequence becomes
+# a fixed list of test cases before any test runs.
+@pytest.mark.parametrize("post_id", generate_post_ids(1, 20))
+def test_generated_post_ids_are_valid(post_id: int):
+    assert post_id % 10 != 0, f"Post ID {post_id} should be skipped (reserved)"
